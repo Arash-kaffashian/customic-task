@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app_network
+
+  web:
+    build: .
+    container_name: django_web
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    networks:
+      - app_network
+
+  celery:
+    build: .
+    container_name: celery_worker
+    command: celery -A mytask worker -l info
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+    depends_on:
+      - redis
+    networks:
+      - app_network
+
+volumes:
+  media_volume:
+
+networks:
+  app_network:
+    driver: bridge

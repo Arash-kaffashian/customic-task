@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>ساخت ماکاپ تی‌شرت</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            direction: rtl;
+            text-align: center;
+            margin-top: 40px;
+            background: #fafafa;
+        }
+        form {
+            display: inline-block;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            background: #fff;
+        }
+        input, select, button {
+            margin: 8px;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #aaa;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .images {
+            margin-top: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .images img {
+            width: 150px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            transition: transform 0.3s;
+        }
+        .images img:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <h2>ساخت ماکاپ تی‌شرت</h2>
+
+    <form id="mockupForm" method="POST">
+        {% csrf_token %}
+        <div>
+            <label>متن روی لباس:</label><br>
+            <input type="text" name="text" placeholder="مثلاً Customic" required>
+        </div>
+
+        <div>
+            <label>رنگ متن:</label><br>
+            <select name="text_color">
+                <option value="1">سفید</option>
+                <option value="2">زرد</option>
+                <option value="3">آبی</option>
+                <option value="4">مشکی</option>
+            </select>
+        </div>
+
+        <div>
+            <label>فونت:</label><br>
+            <select name="font">
+                <option value="default">پیش‌فرض</option>
+                <option value="arial">Arial</option>
+                <option value="times">Times</option>
+            </select>
+        </div>
+
+        <button type="submit">ساخت موکاپ</button>
+    </form>
+
+    <div id="status" style="margin-top:20px; font-weight: bold;"></div>
+    <div class="images" id="images"></div>
+
+    <script>
+        // گرفتن CSRF از کوکی
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        // رویداد فرم
+        document.getElementById('mockupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            data.text_color = parseInt(data.text_color);
+
+            document.getElementById('status').innerText = "در حال ساخت ماکاپ...";
+            document.getElementById('images').innerHTML = "";
+
+            // ارسال درخواست ساخت
+            const res = await fetch('/mockups/generate/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await res.json();
+
+            if (!res.ok) {
+                document.getElementById('status').innerText = "❌ خطا در ساخت ماکاپ!";
+                console.error(result);
+                return;
+            }
+
+            document.getElementById('status').innerText = "در حال پردازش...";
+
+            const taskId = result.task_id;
+            const interval = setInterval(async () => {
+                const statusRes = await fetch(`/mockups/status/${taskId}/`);
+                const statusData = await statusRes.json();
+
+                if (statusData.status === 'SUCCESS') {
+                    clearInterval(interval);
+                    document.getElementById('status').innerText = "✅ ساخت موکاپ انجام شد!";
+                    const container = document.getElementById('images');
+                    statusData.results.forEach(item => {
+                        const img = document.createElement('img');
+                        img.src = item.image_url;
+                        container.appendChild(img);
+                    });
+                }
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
