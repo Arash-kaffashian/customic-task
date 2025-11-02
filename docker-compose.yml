@@ -1,4 +1,5 @@
 version: '3.8'
+# it is important to build the web and the celery volume at the same cache !!!
 
 services:
   redis:
@@ -8,6 +9,12 @@ services:
       - "6379:6379"
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
   web:
     build: .
@@ -18,8 +25,11 @@ services:
       - media_volume:/app/media
     ports:
       - "8000:8000"
+    # include depends on to build celery before redis container
+    # it helps us to avoid running our compose two times to work correctly
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     networks:
       - app_network
 
@@ -31,7 +41,10 @@ services:
       - .:/app
       - media_volume:/app/media
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
     networks:
       - app_network
 

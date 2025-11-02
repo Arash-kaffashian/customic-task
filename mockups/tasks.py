@@ -1,11 +1,15 @@
 from django.core.files.base import ContentFile
+from django.conf import settings
+
 from .models import GenerationTask, Mockup
 from .pigs import create_mockup_image
 from celery import shared_task
-from django.conf import settings
+
 import uuid
 import io
 
+
+# CELERY TASK GENERATOR
 @shared_task(bind=True)
 def generate_mockups_task(self, task_db_id, text, font, text_color, shirt_colors):
     try:
@@ -15,43 +19,34 @@ def generate_mockups_task(self, task_db_id, text, font, text_color, shirt_colors
     except GenerationTask.DoesNotExist:
         return {'error': 'GenerationTask not found'}
 
-    # اطمینان از اینکه مقادیر عددی‌اند
     shirt_colors = [int(c) for c in shirt_colors]
     text_color = int(text_color)
-
     results = []
     for color in shirt_colors:
         try:
-            # ساخت تصویر ماکاپ
             img = create_mockup_image(
-                text=text or '',
+                text=text,
                 shirt_color=color,
                 text_color=text_color,
-                font_name=font or 'default'
+                font_name=font
             )
 
-            # ذخیره در حافظه موقت
-            buffer = io.BytesIO()
-            img.save(buffer, format='PNG')
-            buffer.seek(0)
-
             filename = f'mockup_{gen_task.task_id}_{color}_{uuid.uuid4().hex[:8]}.png'
+            image_bytes = io.BytesIO()
+            img.save(image_bytes, format='PNG')
 
-            # مسیر نهایی فایل رو چک کنیم
-            print("🖼 در حال ذخیره تصویر:", filename)
-            print("📁 MEDIA_ROOT:", settings.MEDIA_ROOT)
-
-            # ساخت رکورد مدل Mockup
             mockup = Mockup.objects.create(
-                gen_task=gen_task,  # ✅ فیلد درست
+                gen_task=gen_task,
                 text=text,
                 font=font,
                 text_color=text_color,
                 shirt_color=color,
             )
 
-            # ذخیره تصویر فیزیکی
-            mockup.image.save(filename, ContentFile(buffer.read()), save=True)
+            mockup.image.save(filename, ContentFile(image_bytes.getvalue()), save=True)
+            mockup.refresh_from_db()
+
+            print("✅ Saved mockup to:", mockup.image.path)
 
             results.append({
                 'image_url': mockup.image.url,

@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 import uuid
 
 
+# Tasks Model
 class GenerationTask(models.Model):
     task_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     status = models.CharField(max_length=50, default='PENDING')
@@ -13,6 +14,7 @@ class GenerationTask(models.Model):
         return self.task_id
 
 
+# Mockup Model
 class Mockup(models.Model):
     COLOR_ONE = 1
     COLOR_TWO = 2

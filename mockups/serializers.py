@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Mockup, GenerationTask
 
 
+# MOCKUP LIST SERIALIZER
 class MockupSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
 
@@ -9,6 +10,7 @@ class MockupSerializer(serializers.ModelSerializer):
         model = Mockup
         fields = ('id', 'text', 'font', 'text_color', 'shirt_color', 'image_url', 'created_at')
 
+    # IMAGE URL GENERATOR FOR EACH TASK
     def get_image_url(self, obj):
         request = self.context.get('request')
         if obj.image:
@@ -19,6 +21,7 @@ class MockupSerializer(serializers.ModelSerializer):
         return ''
 
 
+# TASK LIST SERIALIZER
 class GenerationTaskSerializer(serializers.ModelSerializer):
     results = MockupSerializer(many=True, read_only=True)
 
