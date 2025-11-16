@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 import uuid
 
 
-# orange code : do we need tasks models ?
+# orange code : do we need tasks model ?
 # Tasks Model
 class GenerationTask(models.Model):
     # orange code : do we realy need to generate task_id ?

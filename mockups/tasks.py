@@ -33,7 +33,7 @@ def generate_mockups_task(self, task_db_id, text, font, text_color, shirt_colors
                 font_name=font
             )
 
-            # need to change if we change taskid generation method
+            # orange code : need to change if we change taskid generation method
             filename = f'mockup_{gen_task.task_id}_{color}_{uuid.uuid4().hex[:8]}.png'
             image_bytes = io.BytesIO()
             img.save(image_bytes, format='PNG')
