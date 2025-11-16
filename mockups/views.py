@@ -1,14 +1,15 @@
-from rest_framework import status, generics, filters
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import status
 
-from django.shortcuts import get_object_or_404, render
+from django.core.cache import cache
 
-from .serializers import GenerationTaskSerializer, MockupSerializer
-from .models import GenerationTask, Mockup
+from .serializers import MockupSerializer
+from .models import Mockup
 from .tasks import generate_mockups_task
 
 import uuid
+import json
 
 
 # green code : why apiview (what is the different between apiview and generic view)
@@ -20,57 +21,66 @@ class GenerateMockupView(APIView):
         text = str(data.get('text', '')).strip()
         font = str(data.get('font', '')).strip()
         text_color = int(data.get('text_color', 1))
-        shirt_color_raw = data.get('shirt_color', [4])
+        shirt_colors = data.get('shirt_color', [4])
+        if isinstance(shirt_colors, str):
+            shirt_colors = json.loads(shirt_colors)
 
-        # CHECKING shirt_color TYPE
-        if isinstance(shirt_color_raw, str):
-            try:
-                shirt_colors = json.loads(shirt_color_raw)
-            except json.JSONDecodeError:
-                shirt_colors = [int(shirt_color_raw)]
-        else:
-            shirt_colors = [int(c) for c in shirt_color_raw]
+        task_id = uuid.uuid4().hex
 
-        print("🟢 Received:", data)
+        cache.set(f"task:{task_id}", json.dumps({
+            "status": "PENDING"
+        }), timeout=86400)
 
-        # task_id MUST BE unique THATS WHY WE USE UUID FOR EACH TASK
-        # orange code : do we need to generate task_id ? and if we dont what about status ?
-        task_id = str(uuid.uuid4())
-        gen_task = GenerationTask.objects.create(task_id=task_id, status='PENDING')
-
-        # SENDING DATA TO CELERY TASK
-        generate_mockups_task.delay(
-            gen_task.id,
-            text,
-            font,
-            text_color,
-            shirt_colors
-        )
+        generate_mockups_task.delay(task_id, text, font, text_color, shirt_colors)
 
         return Response({
-            'task_id': task_id,
-            'status': 'PENDING',
-            'message': 'ساخت تصویر آغاز شد'
-        }, status=status.HTTP_202_ACCEPTED)
+            "task_id": task_id,
+            "status": "PENDING"
+        })
 
 
 # VIEW TASK STATUS
 class TaskStatusView(APIView):
     def get(self, request, task_id):
-        gen_task = get_object_or_404(GenerationTask, task_id=task_id)
-        serializer = GenerationTaskSerializer(gen_task, context={'request': request})
-        return Response(serializer.data)
+
+        # 1) وضعیت را از Redis بخوان
+        redis_key = f"task:{task_id}"
+        cached = cache.get(redis_key)
+
+        if not cached:
+            return Response({
+                "error": "Task not found or expired"
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        task_data = json.loads(cached)
+
+        # 2) تمام mockup های این task_id را از دیتابیس بگیر
+        mockups = Mockup.objects.filter(task_id=task_id).order_by('-created_at')
+
+        results = []
+        for m in mockups:
+            results.append({
+                "image_url": request.build_absolute_uri(m.image.url),
+                "created_at": m.created_at.isoformat()
+            })
+
+        # 3) خروجی نهایی را دستی بساز و برگردان
+        return Response({
+            "task_id": task_id,
+            "status": task_data.get("status", "UNKNOWN"),
+            "results": results
+        })
 
 
 # VIEW MOCKUP LIST
-class MockupListView(generics.ListAPIView):
-    serializer_class = MockupSerializer
-    queryset = Mockup.objects.all().order_by('-created_at')
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['text', 'shirt_color']
+class MockupListView(APIView):
+    """
+    List all Mockups stored in the DB
+    """
+    def get(self, request):
+        # همه Mockupها بر اساس task_id مرتب شده بر اساس تاریخ
+        mockups = Mockup.objects.all().order_by('-created_at')
 
-    # green code : what is it do ?
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context.update({'request': self.request})
-        return context
+        # Serialize با MockupSerializer
+        serializer = MockupSerializer(mockups, many=True, context={"request": request})
+        return Response(serializer.data)

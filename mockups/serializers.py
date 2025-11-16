@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Mockup, GenerationTask
+from .models import Mockup
 
 
 # MOCKUP LIST SERIALIZER
@@ -22,11 +22,4 @@ class MockupSerializer(serializers.ModelSerializer):
         return ''
 
 
-# TASK LIST SERIALIZER
-class GenerationTaskSerializer(serializers.ModelSerializer):
-    # green code : why result ? how it is work ?
-    results = MockupSerializer(many=True, read_only=True)
 
-    class Meta:
-        model = GenerationTask
-        fields = ('task_id', 'status', 'created_at', 'results')

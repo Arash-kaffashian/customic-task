@@ -4,18 +4,6 @@ from django.utils.translation import gettext_lazy as _
 import uuid
 
 
-# orange code : do we need tasks model ?
-# Tasks Model
-class GenerationTask(models.Model):
-    # orange code : do we realy need to generate task_id ?
-    task_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    status = models.CharField(max_length=50, default='PENDING')
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.task_id
-
-
 # Mockup Model
 class Mockup(models.Model):
     # green code : why types
@@ -31,7 +19,7 @@ class Mockup(models.Model):
     )
 
     # orange code : must be change if Generation task changed
-    gen_task = models.ForeignKey(GenerationTask, related_name='results', on_delete=models.CASCADE)
+    task_id = models.CharField(max_length=100, db_index=True)
     text = models.TextField()
     font = models.CharField(max_length=100, blank=True, null=True)
     text_color = models.PositiveSmallIntegerField(_('text color'), choices=COLOR_TYPES, default=1)

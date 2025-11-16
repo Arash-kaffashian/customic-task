@@ -6,7 +6,6 @@ from .views import GenerateMockupView, TaskStatusView, MockupListView
 # futures : what is swagger ?
 urlpatterns = [
     path('mockups/generate', GenerateMockupView.as_view(), name='generate-mockup'),
-    path('tasks/<uuid:task_id>/', TaskStatusView.as_view(), name='task-status'),
-    path('mockups', MockupListView.as_view(), name='mockup-list'),
+    path('tasks/<str:task_id>/', TaskStatusView.as_view(), name='task-status'),
+    path('mockups/', MockupListView.as_view(), name='active-mockup-list'),
 ]
-
