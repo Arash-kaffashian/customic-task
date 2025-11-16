@@ -14,6 +14,7 @@ class MockupSerializer(serializers.ModelSerializer):
     def get_image_url(self, obj):
         request = self.context.get('request')
         if obj.image:
+            # orange code : files must be stay files ? or what ?
             relative_url = obj.image.url.replace('/media/', '/files/')
             if request:
                 return request.build_absolute_uri(relative_url)
