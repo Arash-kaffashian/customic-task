@@ -19,7 +19,9 @@ services:
   web:
     build: .
     container_name: django_web
+    # need to add makemigrations and migrate
     command: python manage.py runserver 0.0.0.0:8000
+    # green code : why like this ? - media_volume:/app/media
     volumes:
       - .:/app
       - media_volume:/app/media
@@ -30,6 +32,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    # green code : do you know different networks type ?
     networks:
       - app_network
 
@@ -51,6 +54,7 @@ services:
 volumes:
   media_volume:
 
+# green code : do you know different networks type ? why bridge ?
 networks:
   app_network:
     driver: bridge

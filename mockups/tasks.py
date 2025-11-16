@@ -15,10 +15,12 @@ def generate_mockups_task(self, task_db_id, text, font, text_color, shirt_colors
     try:
         gen_task = GenerationTask.objects.get(id=task_db_id)
         gen_task.status = 'IN_PROGRESS'
+        # red code : save() = hard code ? is it not scalable ?
         gen_task.save()
     except GenerationTask.DoesNotExist:
         return {'error': 'GenerationTask not found'}
 
+    # green code : need to change ?
     shirt_colors = [int(c) for c in shirt_colors]
     text_color = int(text_color)
     results = []
@@ -31,6 +33,7 @@ def generate_mockups_task(self, task_db_id, text, font, text_color, shirt_colors
                 font_name=font
             )
 
+            # need to change if we change taskid generation method
             filename = f'mockup_{gen_task.task_id}_{color}_{uuid.uuid4().hex[:8]}.png'
             image_bytes = io.BytesIO()
             img.save(image_bytes, format='PNG')
@@ -48,6 +51,7 @@ def generate_mockups_task(self, task_db_id, text, font, text_color, shirt_colors
 
             print("✅ Saved mockup to:", mockup.image.path)
 
+            # orange code : created at or updated at
             results.append({
                 'image_url': mockup.image.url,
                 'created_at': mockup.created_at.isoformat()
@@ -57,5 +61,6 @@ def generate_mockups_task(self, task_db_id, text, font, text_color, shirt_colors
             print(f"❌ Error generating mockup for color {color}: {e}")
 
     gen_task.status = 'SUCCESS'
+    # red code : save() = hard code ?
     gen_task.save()
     return {'task_id': gen_task.task_id, 'status': 'SUCCESS', 'results': results}

@@ -11,6 +11,7 @@ from .tasks import generate_mockups_task
 import uuid
 
 
+# green code : why apiview (what is the different between apiview and generic view)
 # VIEW GENERATE
 class GenerateMockupView(APIView):
     def post(self, request):
@@ -33,6 +34,7 @@ class GenerateMockupView(APIView):
         print("🟢 Received:", data)
 
         # task_id MUST BE unique THATS WHY WE USE UUID FOR EACH TASK
+        # orange code : do we need to generate task_id ? and if we dont what about status ?
         task_id = str(uuid.uuid4())
         gen_task = GenerationTask.objects.create(task_id=task_id, status='PENDING')
 
@@ -67,6 +69,7 @@ class MockupListView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter]
     search_fields = ['text', 'shirt_color']
 
+    # green code : what is it do ?
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context.update({'request': self.request})

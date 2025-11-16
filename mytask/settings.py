@@ -8,12 +8,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
+
+# red code : it must be on another setting.py and added to git ignore !!!
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-j@d=lk1#d3@-w@qse)t%e@k5((w1-se^h@xh(og+g!zeu4=u8e'
 
+# red code : it must be on another setting.py and added to git ignore !!!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# red code : it must be on another setting.py and added to git ignore !!!
 ALLOWED_HOSTS = ['*']
 
 

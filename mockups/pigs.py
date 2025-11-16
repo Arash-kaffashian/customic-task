@@ -16,6 +16,7 @@ FONTS_MAP = {
     'default': os.path.join(BASE_DIR, 'static', 'fonts', 'DejaVuSans.ttf'),
 }
 
+# green code : it can be a color.model
 # COLORS
 COLOR_MAP = {
     1: ('white', '#FFFFFF'),
@@ -32,6 +33,7 @@ def create_mockup_image(text, shirt_color, text_color, font_name):
     shirt_name, _ = COLOR_MAP.get(shirt_color, ('white', '#FFFFFF'))
     _, text_hex = COLOR_MAP.get(text_color, ('black', '#000000'))
 
+    # orange code : must be change if the shirts path changed
     # BASE IMAGE PATH
     base_path = os.path.join(BASE_DIR, 'static', 'mockup_bases', f'{shirt_name}.png')
     if not os.path.exists(base_path):

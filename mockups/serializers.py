@@ -23,6 +23,7 @@ class MockupSerializer(serializers.ModelSerializer):
 
 # TASK LIST SERIALIZER
 class GenerationTaskSerializer(serializers.ModelSerializer):
+    # green code : why result ? how it is work ?
     results = MockupSerializer(many=True, read_only=True)
 
     class Meta:
