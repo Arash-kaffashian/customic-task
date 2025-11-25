@@ -5,7 +5,7 @@ from rest_framework import status
 from django.core.cache import cache
 
 from .serializers import MockupSerializer
-from .models import Mockup
+from .models import Mockup, Color, Font, Shirt
 from .tasks import generate_mockups_task
 
 import uuid
@@ -16,22 +16,83 @@ import json
 # VIEW GENERATE
 class GenerateMockupView(APIView):
     def post(self, request):
+
         data = request.data
 
+        # ---------------------------
+        # TEXT VALIDATION
+        # ---------------------------
         text = str(data.get('text', '')).strip()
-        font = str(data.get('font', '')).strip()
-        text_color = int(data.get('text_color', 1))
-        shirt_colors = data.get('shirt_color', [4])
-        if isinstance(shirt_colors, str):
-            shirt_colors = json.loads(shirt_colors)
+        if not text:
+            return Response({"error": "text field is required"}, status=400)
 
+        # ---------------------------
+        # FONT VALIDATION (optional)
+        # ---------------------------
+        font_val = data.get('font')
+        font_obj = None
+        if font_val:
+            font_obj = Font.objects.filter(name=font_val).first()
+            if not font_obj:
+                return Response({"error": "font not found"}, status=404)
+
+        # ---------------------------
+        # TEXT COLOR VALIDATION (optional)
+        # ---------------------------
+        text_color_val = data.get('text_color')
+        text_color_obj = None
+        if text_color_val:
+            text_color_obj = Color.objects.filter(color=text_color_val).first()
+            if not text_color_obj:
+                return Response({"error": "text color not found"}, status=404)
+
+        # ---------------------------
+        # SHIRT COLORS (required)
+        # ---------------------------
+        shirt_colors = data.get("shirt_color", [])
+
+        # اگر رشته بود (مثلاً JSON string از فرانت)
+        if isinstance(shirt_colors, str):
+            try:
+                shirt_colors = json.loads(shirt_colors)
+            except:
+                return Response({"error": "shirt_color must be a list"}, status=400)
+
+        if not isinstance(shirt_colors, list):
+            return Response({"error": "shirt_color must be a list"}, status=400)
+
+        if len(shirt_colors) == 0:
+            return Response({"error": "at least one shirt_color is required"}, status=400)
+
+        shirt_objs = []
+        for sc in shirt_colors:
+            shirt_obj = Shirt.objects.filter(color=sc).first()
+            if not shirt_obj:
+                return Response({"error": f"shirt color '{sc}' not found"}, status=404)
+
+            if not shirt_obj.existence:
+                return Response({"error": f"shirt color '{sc}' is not available"}, status=400)
+
+            shirt_objs.append(shirt_obj.id)
+
+        # ---------------------------------------
+        # CREATE TASK
+        # ---------------------------------------
         task_id = uuid.uuid4().hex
 
-        cache.set(f"task:{task_id}", json.dumps({
-            "status": "PENDING"
-        }), timeout=86400)
+        cache.set(
+            f"task:{task_id}",
+            json.dumps({"status": "PENDING"}),
+            timeout=86400
+        )
 
-        generate_mockups_task.delay(task_id, text, font, text_color, shirt_colors)
+        generate_mockups_task.delay(
+            task_id=task_id,
+            text=text,
+            font_id=font_obj.id if font_obj else None,
+            text_color_id=text_color_obj.id if text_color_obj else None,
+            shirt_color_ids=shirt_objs,
+        )
 
         return Response({
             "task_id": task_id,

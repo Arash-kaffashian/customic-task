@@ -1,31 +1,35 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-import uuid
+
+# shirts
+class Shirt(models.Model):
+    color = models.CharField(max_length=50)
+    existence = models.BooleanField(default=True)
+    image = models.ImageField(upload_to='shirts/')
+
+
+# fonts
+class Font(models.Model):
+    name = models.CharField(max_length=100, blank=True)
+    font = models.FileField(upload_to='fonts/')
+
+
+# colors
+class Color(models.Model):
+    color = models.CharField(max_length=50, blank=True)
 
 
 # Mockup Model
 class Mockup(models.Model):
-    # green code : why types
-    COLOR_ONE = 1
-    COLOR_TWO = 2
-    COLOR_THREE = 3
-    COLOR_FOUR = 4
-    COLOR_TYPES = (
-        (COLOR_ONE, _('white')),
-        (COLOR_TWO, _('yellow')),
-        (COLOR_THREE, _('blue')),
-        (COLOR_FOUR, _('black'))
-    )
 
-    # orange code : must be change if Generation task changed
     task_id = models.CharField(max_length=100, db_index=True)
     text = models.TextField()
-    font = models.CharField(max_length=100, blank=True, null=True)
-    text_color = models.PositiveSmallIntegerField(_('text color'), choices=COLOR_TYPES, default=1)
-    shirt_color = models.PositiveSmallIntegerField(_('shirt color'), choices=COLOR_TYPES, default=4)
+    font = models.OneToOneField('Font', verbose_name='Font', blank=True, on_delete=models.PROTECT)
+    text_color = models.OneToOneField('Color', verbose_name='Color', blank=True, on_delete=models.PROTECT)
+    shirt_color = models.OneToOneField('Shirt', verbose_name='Shirt', blank=True, on_delete=models.PROTECT)
     image = models.ImageField(upload_to='mockups/')
-    # futures : update date for admin panel changes
+    updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def image_url(self):

@@ -2,7 +2,7 @@ from django.core.files.base import ContentFile
 from django.conf import settings
 from django.core.cache import cache
 
-from .models import Mockup
+from .models import Mockup, Shirt, Font, Color
 from .pigs import create_mockup_image
 from celery import shared_task
 
@@ -11,9 +11,8 @@ import json
 import io
 
 
-# CELERY TASK GENERATOR
 @shared_task(bind=True)
-def generate_mockups_task(self, task_id, text, font, text_color, shirt_colors):
+def generate_mockups_task(self, task_id, text, font_id, text_color_id, shirt_color_ids):
 
     redis_key = f"task:{task_id}"
 
@@ -23,27 +22,41 @@ def generate_mockups_task(self, task_id, text, font, text_color, shirt_colors):
 
     results = []
 
-    for color in shirt_colors:
+    # --------------------------
+    # گرفتن اشیاء واقعی از DB
+    # --------------------------
+    font_obj = Font.objects.filter(id=font_id).first()
+    color_obj = Color.objects.filter(id=text_color_id).first()
+
+    for shirt_id in shirt_color_ids:
+
         try:
+            shirt_obj = Shirt.objects.filter(id=shirt_id).first()
+            if not shirt_obj:
+                continue
+
+            # ساخت تصویر
             img = create_mockup_image(
                 text=text,
-                shirt_color=int(color),
-                text_color=int(text_color),
-                font_name=font
+                shirt_obj=shirt_obj,
+                color_obj=color_obj,
+                font_obj=font_obj,
             )
 
-            filename = f"mockup_{task_id}_{color}_{uuid.uuid4().hex[:6]}.png"
+            filename = f"mockup_{task_id}_{shirt_id}_{uuid.uuid4().hex[:6]}.png"
             image_bytes = io.BytesIO()
             img.save(image_bytes, format='PNG')
 
+            # ساخت رکورد Mockup
             mockup = Mockup.objects.create(
                 task_id=task_id,
                 text=text,
-                font=font,
-                text_color=text_color,
-                shirt_color=color
+                font=font_obj,
+                text_color=color_obj,
+                shirt_color=shirt_obj
             )
 
+            # ذخیره عکس
             mockup.image.save(filename, ContentFile(image_bytes.getvalue()))
             mockup.save()
 
