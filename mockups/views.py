@@ -12,6 +12,44 @@ import uuid
 import json
 
 
+class FontListView(APIView):
+    def get(self, request):
+        key = "fonts:list"
+        data = cache.get(key)
+
+        if not data:
+            data = list(Font.objects.all().values("id", "name"))
+            cache.set(key, data, 86400)
+
+        return Response(data)
+
+
+class ColorListView(APIView):
+    def get(self, request):
+        key = "colors:list"
+        data = cache.get(key)
+        print("رنگ‌ها کش شده‌اند")
+
+        if not data:
+            data = list(Color.objects.all().values("id", "color", "hex"))
+            cache.set(key, data, 86400)
+            print("رنگ‌ها هنوز کش نشده‌اند")
+
+        return Response(data)
+
+
+class ShirtColorListView(APIView):
+    def get(self, request):
+        key = "shirts:list"
+        data = cache.get(key)
+
+        if not data:
+            data = list(Shirt.objects.filter(existence=True).values("id", "color", "image"))
+            cache.set(key, data, 86400)
+
+        return Response(data)
+
+
 # green code : why apiview (what is the different between apiview and generic view)
 # VIEW GENERATE
 class GenerateMockupView(APIView):
