@@ -23,7 +23,7 @@ def generate_mockups_task(self, task_id, text, font_id, text_color_id, shirt_col
     results = []
 
     # --------------------------
-    # گرفتن اشیاء واقعی از DB
+    # Fetching objects from DB
     # --------------------------
     font_obj = Font.objects.filter(id=font_id).first()
     color_obj = Color.objects.filter(id=text_color_id).first()
@@ -35,7 +35,7 @@ def generate_mockups_task(self, task_id, text, font_id, text_color_id, shirt_col
             if not shirt_obj:
                 continue
 
-            # ساخت تصویر
+            # generate image
             img = create_mockup_image(
                 text=text,
                 shirt_obj=shirt_obj,
@@ -47,7 +47,7 @@ def generate_mockups_task(self, task_id, text, font_id, text_color_id, shirt_col
             image_bytes = io.BytesIO()
             img.save(image_bytes, format='PNG')
 
-            # ساخت رکورد Mockup
+            # generate mockup record
             mockup = Mockup.objects.create(
                 task_id=task_id,
                 text=text,
@@ -56,7 +56,7 @@ def generate_mockups_task(self, task_id, text, font_id, text_color_id, shirt_col
                 shirt_color=shirt_obj
             )
 
-            # ذخیره عکس
+            # saving image
             mockup.image.save(filename, ContentFile(image_bytes.getvalue()))
             mockup.save()
 

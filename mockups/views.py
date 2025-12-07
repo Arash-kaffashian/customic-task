@@ -50,7 +50,6 @@ class ShirtColorListView(APIView):
         return Response(data)
 
 
-# green code : why apiview (what is the different between apiview and generic view)
 # VIEW GENERATE
 class GenerateMockupView(APIView):
     def post(self, request):
@@ -142,7 +141,7 @@ class GenerateMockupView(APIView):
 class TaskStatusView(APIView):
     def get(self, request, task_id):
 
-        # 1) وضعیت را از Redis بخوان
+        # 1) reading status from redis
         redis_key = f"task:{task_id}"
         cached = cache.get(redis_key)
 
@@ -153,7 +152,7 @@ class TaskStatusView(APIView):
 
         task_data = json.loads(cached)
 
-        # 2) تمام mockup های این task_id را از دیتابیس بگیر
+        # 2) Fetching all mockups from DB with this task_id
         mockups = Mockup.objects.filter(task_id=task_id).order_by('-created_at')
 
         results = []
@@ -163,7 +162,7 @@ class TaskStatusView(APIView):
                 "created_at": m.created_at.isoformat()
             })
 
-        # 3) خروجی نهایی را دستی بساز و برگردان
+        # 3) generate final response and return
         return Response({
             "task_id": task_id,
             "status": task_data.get("status", "UNKNOWN"),
@@ -177,9 +176,9 @@ class MockupListView(APIView):
     List all Mockups stored in the DB
     """
     def get(self, request):
-        # همه Mockupها بر اساس task_id مرتب شده بر اساس تاریخ
+        # all mockups by task_id ordered by created_at
         mockups = Mockup.objects.all().order_by('-created_at')
 
-        # Serialize با MockupSerializer
+        # Serialize with MockupSerializer
         serializer = MockupSerializer(mockups, many=True, context={"request": request})
         return Response(serializer.data)

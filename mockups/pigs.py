@@ -10,7 +10,7 @@ BASE_DIR = settings.BASE_DIR
 def create_mockup_image(text, shirt_obj, color_obj, font_obj):
 
     # ------------------------------
-    # 1) گرفتن مسیر تصویر تیشرت از مدل Shirt
+    # 1) Fetching Shirt.image.url from model
     # ------------------------------
     if not shirt_obj or not shirt_obj.image:
         raise ValueError("❌ shirt_obj معتبر نیست یا تصویر ندارد.")
@@ -20,7 +20,7 @@ def create_mockup_image(text, shirt_obj, color_obj, font_obj):
         raise FileNotFoundError(f"❌ تصویر تیشرت {shirt_path} پیدا نشد!")
 
     # ------------------------------
-    # 2) گرفتن رنگ متن از مدل Color
+    # 2) Fetching Color from model
     # ------------------------------
     if not color_obj or not color_obj.color:
         text_hex = "#000000"  # رنگ پیشفرض سیاه
@@ -28,7 +28,7 @@ def create_mockup_image(text, shirt_obj, color_obj, font_obj):
         text_hex = color_obj.color.strip()
 
     # ------------------------------
-    # 3) گرفتن فونت از مدل Font
+    # 3) Fetching Font from model
     # ------------------------------
     if font_obj and font_obj.font:
         font_path = font_obj.font.path
@@ -41,22 +41,22 @@ def create_mockup_image(text, shirt_obj, color_obj, font_obj):
         font_path = os.path.join(BASE_DIR, 'static', 'fonts', 'DejaVuSans.ttf')
 
     # ------------------------------
-    # 4) باز کردن تصویر تیشرت
+    # 4) Opening Shirt image
     # ------------------------------
     base = Image.open(shirt_path).convert('RGBA')
     width, height = base.size
 
     # ------------------------------
-    # 5) لایه متن
+    # 5) text layer
     # ------------------------------
     txt_layer = Image.new('RGBA', base.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(txt_layer)
 
-    # اندازه فونت
+    # Font size
     font_size = int(height * 0.08)
     font = ImageFont.truetype(font_path, size=font_size)
 
-    # محاسبه اندازه متن
+    # calculating text size
     bbox = draw.textbbox((0, 0), text, font=font)
     text_w = bbox[2] - bbox[0]
     text_h = bbox[3] - bbox[1]
@@ -64,11 +64,11 @@ def create_mockup_image(text, shirt_obj, color_obj, font_obj):
     x = (width - text_w) / 2
     y = (height - text_h) / 2
 
-    # رسم متن روی لایه شفاف
+    # Drawing text on Transparent layer
     draw.text((x, y), text, fill=text_hex, font=font)
 
     # ------------------------------
-    # 6) چسباندن لایه‌ها
+    # 6) merging layers
     # ------------------------------
     result = Image.alpha_composite(base, txt_layer).convert('RGB')
 

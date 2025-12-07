@@ -1,5 +1,3 @@
-# it is important to build the web and the celery volume at the same cache !!!
-
 services:
   redis:
     image: redis:7
@@ -18,20 +16,21 @@ services:
   web:
     build: .
     container_name: django_web
-    # need to add makemigrations and migrate
-    command: python manage.py runserver 0.0.0.0:8000
-    # green code : why like this ? - media_volume:/app/media
+    command: >
+      sh -c "
+        python manage.py makemigrations &&
+        python manage.py migrate &&
+        python manage.py runserver 0.0.0.0:8000
+      "
     volumes:
       - .:/app
       - media_volume:/app/media
     ports:
       - "8000:8000"
     # include depends on to build celery before redis container
-    # it helps us to avoid running our compose two times to work correctly
     depends_on:
       redis:
         condition: service_healthy
-    # green code : do you know different networks type ?
     networks:
       - app_network
 
@@ -52,8 +51,6 @@ services:
 
 volumes:
   media_volume:
-
-# green code : do you know different networks type ? why bridge ?
 networks:
   app_network:
     driver: bridge
