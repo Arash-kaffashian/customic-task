@@ -1,24 +1,19 @@
 from pathlib import Path
 import os
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Secret Key and Debug
+SECRET_KEY = config('SECRET_KEY')
+DEBUG = config('DEBUG', default=False, cast=bool)
+
+# Allowed hosts
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-
-# red code : it must be on another setting.py and added to git ignore !!!
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-j@d=lk1#d3@-w@qse)t%e@k5((w1-se^h@xh(og+g!zeu4=u8e'
-
-# red code : it must be on another setting.py and added to git ignore !!!
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-# red code : it must be on another setting.py and added to git ignore !!!
-ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -98,11 +93,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
 
@@ -127,7 +119,7 @@ REST_FRAMEWORK = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://redis:6379/1",
+        "LOCATION": config("REDIS_BACKEND_URL"),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
@@ -140,7 +132,7 @@ MEDIA_URL = '/files/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Celery
-CELERY_BROKER_URL = "redis://redis:6379/0"
-CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+CELERY_BROKER_URL = config("REDIS_BROKER_URL")
+CELERY_RESULT_BACKEND = config("REDIS_BROKER_URL")
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
